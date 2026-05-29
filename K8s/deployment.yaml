@@ -1,0 +1,40 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: secureflow-ids
+  labels:
+    app: secureflow-ids
+spec:
+  replicas: 3                    # run 3 copies simultaneously
+  selector:
+    matchLabels:
+      app: secureflow-ids
+  template:
+    metadata:
+      labels:
+        app: secureflow-ids
+    spec:
+      containers:
+      - name: secureflow-ids
+        image: sorosdad/secureflow-ids:v1.0    # your Docker Hub image
+        ports:
+        - containerPort: 8000
+        resources:
+          requests:
+            memory: "256Mi"      # minimum memory guaranteed
+            cpu: "250m"          # 0.25 CPU cores
+          limits:
+            memory: "512Mi"      # maximum memory allowed
+            cpu: "500m"          # 0.5 CPU cores
+        livenessProbe:           # K8s checks this — restarts pod if unhealthy
+          httpGet:
+            path: /health
+            port: 8000
+          initialDelaySeconds: 60
+          periodSeconds: 30
+        readinessProbe:          # K8s only sends traffic when this passes
+          httpGet:
+            path: /health
+            port: 8000
+          initialDelaySeconds: 60
+          periodSeconds: 10

@@ -1,0 +1,12 @@
+apiVersion: v1
+kind: Service
+metadata:
+  name: secureflow-service
+spec:
+  selector:
+    app: secureflow-ids          # routes to pods with this label
+  ports:
+  - protocol: TCP
+    port: 8000                   # port exposed by service
+    targetPort: 8000             # port inside the container
+  type: NodePort                 # exposes on minikube's IP
