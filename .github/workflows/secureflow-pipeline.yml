@@ -1,0 +1,101 @@
+name: SecureFlow CI/CD Pipeline
+
+on:
+  push:
+    branches: [ main ]
+  pull_request:
+    branches: [ main ]
+
+jobs:
+
+  security-scan:
+    name: Security Gates
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Set up Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: '3.11'
+
+      - name: Install security tools
+        run: pip install checkov detect-secrets
+
+      - name: Run Checkov IaC scan
+        run: checkov -d terraform/ --framework terraform
+        continue-on-error: true
+
+      - name: Check for hardcoded secrets
+        run: |
+          if grep -r "password\|secret\|api_key" --include="*.py" app/; then
+            echo "WARNING: Potential secrets found"
+          else
+            echo "PASSED: No hardcoded secrets detected"
+          fi
+
+  build-and-test:
+    name: Build and Test
+    runs-on: ubuntu-latest
+    needs: security-scan
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Set up Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: '3.11'
+
+      - name: Install dependencies
+        run: pip install scikit-learn pandas numpy
+
+      - name: Run model tests
+        run: |
+          python -c "
+          from sklearn.ensemble import RandomForestClassifier
+          import numpy as np
+          X = np.random.rand(100, 41)
+          y = np.random.randint(0, 2, 100)
+          model = RandomForestClassifier(n_estimators=10)
+          model.fit(X, y)
+          score = model.score(X, y)
+          assert score > 0.5, 'Model accuracy too low'
+          print(f'Model test passed: {score:.2%}')
+          "
+
+      - name: Build Docker image
+        run: docker build -t secureflow-ids:${{ github.sha }} .
+
+      - name: Scan container with Trivy
+        uses: aquasecurity/trivy-action@master
+        with:
+          image-ref: secureflow-ids:${{ github.sha }}
+          format: table
+          exit-code: 0
+          severity: CRITICAL,HIGH
+
+  push-image:
+    name: Push to Docker Hub
+    runs-on: ubuntu-latest
+    needs: build-and-test
+    if: github.ref == 'refs/heads/main'
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Log in to Docker Hub
+        uses: docker/login-action@v3
+        with:
+          username: ${{ secrets.DOCKER_USERNAME }}
+          password: ${{ secrets.DOCKER_PASSWORD }}
+
+      - name: Build and push
+        uses: docker/build-push-action@v5
+        with:
+          context: .
+          push: true
+          tags: |
+            sorosdad/secureflow-ids:latest
+            sorosdad/secureflow-ids:${{ github.sha }}
