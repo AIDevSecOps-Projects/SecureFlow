@@ -1,0 +1,40 @@
+apiVersion: argoproj.io/v1alpha1
+kind: Rollout
+metadata:
+  name: secureflow-ids
+spec:
+  replicas: 4
+  strategy:
+    canary:
+      steps:
+      - setWeight: 20        # step 1: send 20% traffic to new version
+      - pause: {duration: 30s}  # wait 30 seconds — monitor metrics
+      - setWeight: 50        # step 2: send 50% traffic to new version
+      - pause: {duration: 30s}  # wait 30 seconds
+      - setWeight: 100       # step 3: promote fully to new version
+  selector:
+    matchLabels:
+      app: secureflow-ids
+  template:
+    metadata:
+      labels:
+        app: secureflow-ids
+    spec:
+      containers:
+      - name: secureflow-ids
+        image: sorosdad/secureflow-ids:v1.0
+        ports:
+        - containerPort: 8000
+        resources:
+          requests:
+            memory: "256Mi"
+            cpu: "250m"
+          limits:
+            memory: "512Mi"
+            cpu: "500m"
+        readinessProbe:
+          httpGet:
+            path: /health
+            port: 8000
+          initialDelaySeconds: 60
+          periodSeconds: 10
