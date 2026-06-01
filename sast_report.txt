@@ -1,0 +1,64 @@
+Run started:2026-06-01 17:07:53.356497+00:00
+
+Test results:
+>> Issue: [B403:blacklist] Consider possible security implications associated with pickle module.
+   Severity: Low   Confidence: High
+   CWE: CWE-502 (https://cwe.mitre.org/data/definitions/502.html)
+   More Info: https://bandit.readthedocs.io/en/1.9.4/blacklists/blacklist_imports.html#b403-import-pickle
+   Location: app/model.py:2:0
+1	# app/model.py
+2	import pickle
+3	import numpy as np
+
+--------------------------------------------------
+>> Issue: [B301:blacklist] Pickle and modules that wrap it can be unsafe when used to deserialize untrusted data, possible security issue.
+   Severity: Medium   Confidence: High
+   CWE: CWE-502 (https://cwe.mitre.org/data/definitions/502.html)
+   More Info: https://bandit.readthedocs.io/en/1.9.4/blacklists/blacklist_calls.html#b301-pickle
+   Location: app/model.py:65:19
+64	        with open(MODEL_PATH, 'rb') as f:
+65	            return pickle.load(f)
+66	    return train_and_save()
+
+--------------------------------------------------
+>> Issue: [B324:hashlib] Use of weak MD5 hash for security. Consider usedforsecurity=False
+   Severity: High   Confidence: High
+   CWE: CWE-327 (https://cwe.mitre.org/data/definitions/327.html)
+   More Info: https://bandit.readthedocs.io/en/1.9.4/plugins/b324_hashlib.html
+   Location: app/security.py:108:24
+107	        'timestamp' : now,
+108	        'feature_hash': hashlib.md5(
+109	            json.dumps(features, sort_keys=True).encode()
+110	        ).hexdigest()
+111	    })
+
+--------------------------------------------------
+>> Issue: [B324:hashlib] Use of weak MD5 hash for security. Consider usedforsecurity=False
+   Severity: High   Confidence: High
+   CWE: CWE-327 (https://cwe.mitre.org/data/definitions/327.html)
+   More Info: https://bandit.readthedocs.io/en/1.9.4/plugins/b324_hashlib.html
+   Location: app/security.py:137:26
+136	            content = f.read()
+137	            actual_hash = hashlib.md5(content).hexdigest()[:16]
+138	            if actual_hash != EXPECTED_DATASET_HASH:
+
+--------------------------------------------------
+
+Code scanned:
+	Total lines of code: 279
+	Total lines skipped (#nosec): 0
+	Total potential issues skipped due to specifically being disabled (e.g., #nosec BXXX): 0
+
+Run metrics:
+	Total issues (by severity):
+		Undefined: 0
+		Low: 1
+		Medium: 1
+		High: 2
+	Total issues (by confidence):
+		Undefined: 0
+		Low: 0
+		Medium: 0
+		High: 4
+Files skipped (1):
+	app/main.py (syntax error while parsing AST from file)

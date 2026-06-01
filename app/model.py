@@ -1,5 +1,5 @@
 # app/model.py
-import pickle
+import joblib
 import numpy as np
 import pandas as pd
 from sklearn.ensemble import RandomForestClassifier
@@ -52,8 +52,7 @@ def train_and_save():
     )
     model.fit(X_train, y_train)
 
-    with open(MODEL_PATH, 'wb') as f:
-        pickle.dump(model, f)
+    joblib.dump(model, MODEL_PATH)
 
     print(f"Model saved to {MODEL_PATH}")
     return model
@@ -61,8 +60,7 @@ def train_and_save():
 def load_model():
     """Load model from disk, train if not found."""
     if os.path.exists(MODEL_PATH):
-        with open(MODEL_PATH, 'rb') as f:
-            return pickle.load(f)
+        return joblib.load(MODEL_PATH)
     return train_and_save()
 
 def predict(features: dict) -> dict:
